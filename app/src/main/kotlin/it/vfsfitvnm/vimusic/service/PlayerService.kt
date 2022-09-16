@@ -725,6 +725,9 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
         val cache: Cache
             get() = this@PlayerService.cache
 
+        val mediaSession: MediaSession
+            get() = this@PlayerService.mediaSession
+
         val sleepTimerMillisLeft: StateFlow<Long?>?
             get() = timerJob?.millisLeft
 
