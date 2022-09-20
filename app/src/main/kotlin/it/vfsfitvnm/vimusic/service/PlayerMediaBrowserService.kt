@@ -12,6 +12,12 @@ import android.os.IBinder
 import android.os.Process
 import android.service.media.MediaBrowserService
 import android.util.Log
+import it.vfsfitvnm.vimusic.Database
+import it.vfsfitvnm.vimusic.enums.PlaylistSortBy
+import it.vfsfitvnm.vimusic.enums.SortOrder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class PlayerMediaBrowserService : MediaBrowserService() {
 
@@ -48,20 +54,42 @@ class PlayerMediaBrowserService : MediaBrowserService() {
             MEDIA_PLAYLISTS_ID -> result.sendResult(createPlaylistsMediaItem())
             MEDIA_FAVORITES_ID -> result.sendResult(createFavoritesMediaItem())
         }
-/*        if (isBound) {
-            result.sendResult(mutableListOf(createPlaylistMediaItem()))
-        } else {
-            // TODO: impl async waiting task ? needed ??
-            // Not sure cause no setToken = no call ?
-        }        */
     }
 
     private fun createFavoritesMediaItem(): MutableList<MediaItem>? {
-        return null
+        return runBlocking(Dispatchers.IO) {
+            Database.favorites().first()
+        }.map { entry ->
+            MediaItem(
+                MediaDescription.Builder()
+                    // TODO : to check
+                    .setMediaId(entry.id)
+                    // TODO: ressource
+                    .setTitle(entry.title)
+                    // TODO icon
+                    /*.setIconUri(Uri.parse("android.resource://" +
+                                    "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/
+                    .build(), MediaItem.FLAG_PLAYABLE
+            )
+        }.toCollection(mutableListOf())
     }
 
     private fun createPlaylistsMediaItem(): MutableList<MediaItem>? {
-        return null
+        return runBlocking(Dispatchers.IO) {
+            Database.playlistPreviews(PlaylistSortBy.DateAdded, SortOrder.Descending).first()
+        }.map { entry ->
+            MediaItem(
+                MediaDescription.Builder()
+                    // TODO : to check
+                    .setMediaId(entry.playlist.id.toString())
+                    // TODO: ressource
+                    .setTitle(entry.playlist.name)
+                    // TODO icon
+                    /*.setIconUri(Uri.parse("android.resource://" +
+                                    "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/
+                    .build(), MediaItem.FLAG_PLAYABLE
+            )
+        }.toCollection(mutableListOf())
     }
 
     private fun createMenuMediaItem(): MutableList<MediaItem>? {
