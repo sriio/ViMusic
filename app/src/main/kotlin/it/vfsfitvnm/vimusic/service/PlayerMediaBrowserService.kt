@@ -15,6 +15,7 @@ import android.util.Log
 import it.vfsfitvnm.vimusic.Database
 import it.vfsfitvnm.vimusic.enums.PlaylistSortBy
 import it.vfsfitvnm.vimusic.enums.SortOrder
+import it.vfsfitvnm.vimusic.utils.MediaIDHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -62,10 +63,9 @@ class PlayerMediaBrowserService : MediaBrowserService() {
         }.map { entry ->
             MediaItem(
                 MediaDescription.Builder()
-                    // TODO : to check
-                    .setMediaId(entry.id)
-                    // TODO: ressource
+                    .setMediaId(MediaIDHelper.createMediaIdForSong(entry.id))
                     .setTitle(entry.title)
+                    .setSubtitle(entry.artistsText)
                     // TODO icon
                     /*.setIconUri(Uri.parse("android.resource://" +
                                     "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/
@@ -80,10 +80,12 @@ class PlayerMediaBrowserService : MediaBrowserService() {
         }.map { entry ->
             MediaItem(
                 MediaDescription.Builder()
-                    // TODO : to check
-                    .setMediaId(entry.playlist.id.toString())
-                    // TODO: ressource
+                    .setMediaId(MediaIDHelper.createMediaIdForPlaylist(entry.playlist.id))
                     .setTitle(entry.playlist.name)
+                    .setSubtitle(
+                        String().plus(entry.songCount)
+                            .plus(if (entry.songCount > 1) " Songs" else " Song")
+                    )
                     // TODO icon
                     /*.setIconUri(Uri.parse("android.resource://" +
                                     "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/

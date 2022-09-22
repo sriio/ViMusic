@@ -19,6 +19,7 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +69,7 @@ import it.vfsfitvnm.vimusic.enums.ExoPlayerDiskCacheMaxSize
 import it.vfsfitvnm.vimusic.models.QueuedMediaItem
 import it.vfsfitvnm.vimusic.query
 import it.vfsfitvnm.vimusic.utils.InvincibleService
+import it.vfsfitvnm.vimusic.utils.MediaIDHelper
 import it.vfsfitvnm.vimusic.utils.RingBuffer
 import it.vfsfitvnm.vimusic.utils.TimerJob
 import it.vfsfitvnm.vimusic.utils.YouTubeRadio
@@ -807,6 +809,9 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
         override fun onSkipToPrevious() = player.forceSeekToPrevious()
         override fun onSkipToNext() = player.forceSeekToNext()
         override fun onSeekTo(pos: Long) = player.seekTo(pos)
+        override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+            player.forcePlayFromBeginning(MediaIDHelper.extractMusicQueueFromMediaId(mediaId))
+        }
     }
 
     private class NotificationActionReceiver(private val player: Player) : BroadcastReceiver() {
