@@ -7,13 +7,16 @@ import android.content.ServiceConnection
 import android.media.MediaDescription
 import android.media.browse.MediaBrowser
 import android.media.browse.MediaBrowser.MediaItem
+import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Process
 import android.service.media.MediaBrowserService
 import android.util.Log
+import it.vfsfitvnm.vimusic.BuildConfig
 import it.vfsfitvnm.vimusic.Database
 import it.vfsfitvnm.vimusic.enums.PlaylistSortBy
+import it.vfsfitvnm.vimusic.enums.SongSortBy
 import it.vfsfitvnm.vimusic.enums.SortOrder
 import it.vfsfitvnm.vimusic.utils.MediaIDHelper
 import kotlinx.coroutines.Dispatchers
@@ -54,11 +57,12 @@ class PlayerMediaBrowserService : MediaBrowserService() {
             MEDIA_ROOT_ID -> result.sendResult(createMenuMediaItem())
             MEDIA_PLAYLISTS_ID -> result.sendResult(createPlaylistsMediaItem())
             MEDIA_FAVORITES_ID -> result.sendResult(createFavoritesMediaItem())
+            MEDIA_SONGS_ID -> result.sendResult(createSongsMediaItem())
         }
     }
 
     private fun createFavoritesMediaItem(): MutableList<MediaItem>? {
-        return runBlocking(Dispatchers.IO) {
+        val favorites = runBlocking(Dispatchers.IO) {
             Database.favorites().first()
         }.map { entry ->
             MediaItem(
@@ -66,12 +70,57 @@ class PlayerMediaBrowserService : MediaBrowserService() {
                     .setMediaId(MediaIDHelper.createMediaIdForSong(entry.id))
                     .setTitle(entry.title)
                     .setSubtitle(entry.artistsText)
-                    // TODO icon
-                    /*.setIconUri(Uri.parse("android.resource://" +
-                                    "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/
+                    .setIconUri(
+                        Uri.parse(entry.thumbnailUrl)
+                    )
                     .build(), MediaItem.FLAG_PLAYABLE
             )
         }.toCollection(mutableListOf())
+        if (favorites.isNotEmpty()) {
+            favorites.add(
+                0, MediaItem(
+                    MediaDescription.Builder()
+                        .setMediaId(MediaIDHelper.createMediaIdForRandomFavorites())
+                        .setTitle("Play all random")
+                        .setIconUri(
+                            Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/drawable/shuffle")
+                        )
+                        .build(), MediaItem.FLAG_PLAYABLE
+                )
+            )
+        }
+        return favorites
+    }
+
+    private fun createSongsMediaItem(): MutableList<MediaItem>? {
+        val songs = runBlocking(Dispatchers.IO) {
+            Database.songs(SongSortBy.DateAdded, SortOrder.Descending).first()
+        }.map { entry ->
+            MediaItem(
+                MediaDescription.Builder()
+                    .setMediaId(MediaIDHelper.createMediaIdForSong(entry.id))
+                    .setTitle(entry.title)
+                    .setSubtitle(entry.artistsText)
+                    .setIconUri(
+                        Uri.parse(entry.thumbnailUrl)
+                    )
+                    .build(), MediaItem.FLAG_PLAYABLE
+            )
+        }.toCollection(mutableListOf())
+        if (songs.isNotEmpty()) {
+            songs.add(
+                0, MediaItem(
+                    MediaDescription.Builder()
+                        .setMediaId(MediaIDHelper.createMediaIdForRandomSongs())
+                        .setTitle("Play all random")
+                        .setIconUri(
+                            Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/drawable/shuffle")
+                        )
+                        .build(), MediaItem.FLAG_PLAYABLE
+                )
+            )
+        }
+        return songs
     }
 
     private fun createPlaylistsMediaItem(): MutableList<MediaItem>? {
@@ -82,13 +131,10 @@ class PlayerMediaBrowserService : MediaBrowserService() {
                 MediaDescription.Builder()
                     .setMediaId(MediaIDHelper.createMediaIdForPlaylist(entry.playlist.id))
                     .setTitle(entry.playlist.name)
-                    .setSubtitle(
-                        String().plus(entry.songCount)
-                            .plus(if (entry.songCount > 1) " Songs" else " Song")
+                    .setSubtitle("${entry.songCount} songs")
+                    .setIconUri(
+                        Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/drawable/playlist")
                     )
-                    // TODO icon
-                    /*.setIconUri(Uri.parse("android.resource://" +
-                                    "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/
                     .build(), MediaItem.FLAG_PLAYABLE
             )
         }.toCollection(mutableListOf())
@@ -99,20 +145,26 @@ class PlayerMediaBrowserService : MediaBrowserService() {
             MediaItem(
                 MediaDescription.Builder()
                     .setMediaId(MEDIA_PLAYLISTS_ID)
-                    // TODO: ressource
                     .setTitle("Playlists")
-                    // TODO
-                    /*.setIconUri(Uri.parse("android.resource://" +
-                            "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/
+                    .setIconUri(
+                        Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/drawable/playlist_white")
+                    )
                     .build(), MediaItem.FLAG_BROWSABLE
             ), MediaItem(
                 MediaDescription.Builder()
                     .setMediaId(MEDIA_FAVORITES_ID)
-                    // TODO: ressource
                     .setTitle("Favorites")
-                    // TODO
-                    /*.setIconUri(Uri.parse("android.resource://" +
-                            "com.example.android.mediabrowserservice/drawable/ic_by_genre"))*/
+                    .setIconUri(
+                        Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/drawable/heart_white")
+                    )
+                    .build(), MediaItem.FLAG_BROWSABLE
+            ), MediaItem(
+                MediaDescription.Builder()
+                    .setMediaId(MEDIA_SONGS_ID)
+                    .setTitle("Songs")
+                    .setIconUri(
+                        Uri.parse("android.resource://${BuildConfig.APPLICATION_ID}/drawable/disc_white")
+                    )
                     .build(), MediaItem.FLAG_BROWSABLE
             )
         )
@@ -153,6 +205,7 @@ class PlayerMediaBrowserService : MediaBrowserService() {
         const val MEDIA_ROOT_ID = "VIMUSIC_MEDIA_ROOT_ID"
         const val MEDIA_PLAYLISTS_ID = "VIMUSIC_MEDIA_PLAYLISTS_ID"
         const val MEDIA_FAVORITES_ID = "VIMUSIC_MEDIA_FAVORITES_ID"
+        const val MEDIA_SONGS_ID = "VIMUSIC_MEDIA_SONGS_ID"
     }
 
 }
